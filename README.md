@@ -1,7 +1,7 @@
 # hyper(HTML)
 
 ### 📣 Community Announcement
-
+# apt get-install awesome-extra
 Please ask questions in the [dedicated forum](https://webreflection.boards.net/) to help the community around this project grow ♥
 
 - - -
