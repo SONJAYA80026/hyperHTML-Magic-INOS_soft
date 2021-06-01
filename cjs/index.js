@@ -1,42 +1,35 @@
 'use strict';
 /*! (c) Andrea Giammarchi (ISC) */
-const WeakMap = (m => m.__esModule ? /* istanbul ignore next */ m.default : /* istanbul ignore next */ m)(require('@ungap/weakmap'));
-const WeakSet = (m => m.__esModule ? /* istanbul ignore next */ m.default : /* istanbul ignore next */ m)(require('@ungap/essential-weakset'));
 
-const diff = (m => m.__esModule ? /* istanbul ignore next */ m.default : /* istanbul ignore next */ m)(require('domdiff'));
-const Component = (m => m.__esModule ? /* istanbul ignore next */ m.default : /* istanbul ignore next */ m)(require('./classes/Component.js'));
+const Component = (m => m.__esModule ? m.default : m)(require('./classes/Component.js'));
 const {setup} = require('./classes/Component.js');
-const Intent = (m => m.__esModule ? /* istanbul ignore next */ m.default : /* istanbul ignore next */ m)(require('./objects/Intent.js'));
-const {observe, Tagger} = require('./objects/Updates.js');
-const wire = (m => m.__esModule ? /* istanbul ignore next */ m.default : /* istanbul ignore next */ m)(require('./hyper/wire.js'));
+const Intent = (m => m.__esModule ? m.default : m)(require('./objects/Intent.js'));
+const wire = (m => m.__esModule ? m.default : m)(require('./hyper/wire.js'));
 const {content, weakly} = require('./hyper/wire.js');
-const render = (m => m.__esModule ? /* istanbul ignore next */ m.default : /* istanbul ignore next */ m)(require('./hyper/render.js'));
+const render = (m => m.__esModule ? m.default : m)(require('./hyper/render.js'));
+const diff = (m => m.__esModule ? m.default : m)(require('./shared/domdiff.js'));
 
 // all functions are self bound to the right context
 // you can do the following
 // const {bind, wire} = hyperHTML;
 // and use them right away: bind(node)`hello!`;
-const bind = context => render.bind(context);
+const adopt = context => function () {
+  render.adopt = true;
+  return render.apply(context, arguments);
+};
+const bind = context => function () {
+  render.adopt = false;
+  return render.apply(context, arguments);
+};
 const define = Intent.define;
-const tagger = Tagger.prototype;
 
 hyper.Component = Component;
+hyper.adopt = adopt;
 hyper.bind = bind;
 hyper.define = define;
 hyper.diff = diff;
 hyper.hyper = hyper;
-hyper.observe = observe;
-hyper.tagger = tagger;
 hyper.wire = wire;
-
-// exported as shared utils
-// for projects based on hyperHTML
-// that don't necessarily need upfront polyfills
-// i.e. those still targeting IE
-hyper._ = {
-  WeakMap,
-  WeakSet
-};
 
 // the wire content is the lazy defined
 // html or svg property of each hyper.Component
@@ -45,12 +38,11 @@ setup(content);
 // everything is exported directly or through the
 // hyperHTML callback, when used as top level script
 exports.Component = Component;
+exports.adopt = adopt;
 exports.bind = bind;
 exports.define = define;
 exports.diff = diff;
 exports.hyper = hyper;
-exports.observe = observe;
-exports.tagger = tagger;
 exports.wire = wire;
 
 // by default, hyperHTML is a smart function
@@ -61,17 +53,17 @@ function hyper(HTML) {
     (HTML == null ?
       content('html') :
       (typeof HTML === 'string' ?
-        hyper.wire(null, HTML) :
+        wire(null, HTML) :
         ('raw' in HTML ?
           content('html')(HTML) :
           ('nodeType' in HTML ?
-            hyper.bind(HTML) :
+            bind(HTML) :
             weakly(HTML, 'html')
           )
         )
       )) :
     ('raw' in HTML ?
-      content('html') : hyper.wire
+      content('html') : wire
     ).apply(null, arguments);
 }
 Object.defineProperty(exports, '__esModule', {value: true}).default = hyper
