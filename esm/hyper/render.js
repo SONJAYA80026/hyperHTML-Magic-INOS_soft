@@ -1,8 +1,12 @@
 import WeakMap from '@ungap/weakmap';
 import tta from '@ungap/template-tag-arguments';
 
+<<<<<<< HEAD
 import {OWNER_SVG_ELEMENT} from '../shared/constants.js';
 import {Tagger} from '../objects/Updates.js';
+=======
+import {selfClosing as SC_RE} from '../shared/re.js';
+>>>>>>> origin/re-adopt
 
 // a weak collection of contexts that
 // are already known to hyperHTML
@@ -76,4 +80,13 @@ function createTemplate(template) {
 >>>>>>> origin/adopt
 }
 
+<<<<<<< HEAD
+=======
+// some node could be special though, like a custom element
+// with a self closing tag, which should work through these changes.
+const SC_PLACE = ($0, $1, $2) => {
+  return VOID_ELEMENTS.test($1) ? $0 : ('<' + $1 + $2 + '></' + $1 + '>');
+};
+
+>>>>>>> origin/re-adopt
 export default render;
