@@ -1,12 +1,14 @@
 'use strict';
 const {Map, WeakMap} = require('../shared/poorlyfills.js');
-const {UIDC} = require('../shared/constants.js');
+const {UIDC, VOID_ELEMENTS} = require('../shared/constants.js');
 const Updates = (m => m.__esModule ? m.default : m)(require('../objects/Updates.js'));
 const {
   createFragment,
   importNode,
   unique
 } = require('../shared/utils.js');
+
+const {selfClosing: SC_RE} = require('../shared/re.js');
 
 // a weak collection of contexts that
 // are already known to hyperHTML
@@ -69,11 +71,18 @@ function update() {
 // no matter if these are attributes, text nodes, or regular one
 function createTemplate(template) {
   const paths = [];
-  const fragment = createFragment(this, template.join(UIDC));
+  const html = template.join(UIDC).replace(SC_RE, SC_PLACE);
+  const fragment = createFragment(this, html);
   Updates.find(fragment, paths, template.slice());
   const info = {fragment, paths};
   templates.set(template, info);
   return info;
 }
+
+// some node could be special though, like a custom element
+// with a self closing tag, which should work through these changes.
+const SC_PLACE = ($0, $1, $2) => {
+  return VOID_ELEMENTS.test($1) ? $0 : ('<' + $1 + $2 + '></' + $1 + '>');
+};
 
 Object.defineProperty(exports, '__esModule', {value: true}).default = render;
