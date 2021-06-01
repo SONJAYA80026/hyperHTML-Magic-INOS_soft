@@ -11,6 +11,7 @@
       </ul>
       <!--:6-->NO<!--:6-->
       <hr>
+<<<<<<< HEAD
       <input value="test">
     </div>
   </body>
@@ -29,11 +30,41 @@
       }
     );
     function update(render, model) {
+=======
+      <input value="write here">
+    </div>
+  </body>
+  <script>
+  setTimeout(
+    function (update) {
+      update(
+        hyperHTML.wire,
+        hyperHTML.adopt(document.body),
+        {
+          test: 'after',
+          text: 'after',
+          list: [
+            {name: 'first'},
+            {name: 'second'}
+          ],
+          inBetween: 'YES'
+        }
+      );
+    },
+    3000,
+    function update(wire, render, model) {
+>>>>>>> origin/re-adopt
       render`
       <div test="${model.test}">
         ${model.text}
         <ul>
+<<<<<<< HEAD
           ${model.list.map(item => `<li> ${item.name} </li>`)}
+=======
+          ${model.list.map(
+            item => wire(item)`<li> ${item.name} </li>`
+          )}
+>>>>>>> origin/re-adopt
         </ul>
         ${model.inBetween}
         <hr>
@@ -41,6 +72,10 @@
       </div>
       `;
     }
+<<<<<<< HEAD
   }, 2000);
+=======
+  );
+>>>>>>> origin/re-adopt
   </script>
 </html>
