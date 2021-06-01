@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 (function () {
   'use strict';
 
@@ -3049,3 +3050,5 @@
   });
 
 }());
+=======
+>>>>>>> origin/re-adopt
