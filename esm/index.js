@@ -50,10 +50,14 @@ setup(content);
 // everything is exported directly or through the
 // hyperHTML callback, when used as top level script
 <<<<<<< HEAD
+<<<<<<< HEAD
 export {Component, bind, define, diff, hyper, observe, tagger, wire};
 =======
 export {Component, adopt, bind, define, diff, hyper, wire};
 >>>>>>> origin/adopt
+=======
+export {Component, adopt, bind, define, diff, hyper, wire};
+>>>>>>> origin/re-adopt
 
 // by default, hyperHTML is a smart function
 // that "magically" understands what's the best
