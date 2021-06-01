@@ -120,6 +120,12 @@ const createAttribute = (node, attr) => {
   return attr;
 };
 
+// set an attribute node and return it
+const createAttribute = (node, attr) => {
+  node.setAttributeNode(attr);
+  return attr;
+};
+
 // finding all paths is a one-off operation performed
 // when a new template literal is used.
 // The goal is to map all target nodes that will be
@@ -190,6 +196,32 @@ const findNode = (node, path, level) => {
       while ((node = node.nextSibling)) {
         index++;
         if (node.nodeType === Node.COMMENT_NODE && node.textContent === textContent) {
+          break;
+        } else {
+          childNodes.push(node);
+        }
+      }
+    }
+    level[i] = index - path[i];
+  }
+  return {node, childNodes};
+};
+
+// used to adopt live nodes from virtual paths
+const findNode = (node, path, level) => {
+  const childNodes = [];
+  const length = path.length;
+  for (let i = 0; i < length; i++) {
+    let index = path[i] + (level[i] || 0);
+    node = node.childNodes[index];
+    if (
+      node.nodeType === COMMENT_NODE &&
+      /^\u0001:[0-9a-zA-Z]+$/.test(node.textContent)
+    ) {
+      const textContent = node.textContent;
+      while ((node = node.nextSibling)) {
+        index++;
+        if (node.nodeType === COMMENT_NODE && node.textContent === textContent) {
           break;
         } else {
           childNodes.push(node);
