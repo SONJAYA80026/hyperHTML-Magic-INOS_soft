@@ -1,7 +1,13 @@
 {
+<<<<<<< HEAD
   "name": "hyperhtml",
   "version": "2.34.0",
   "description": "A Fast & Light Virtual DOM Alternative",
+=======
+  "name": "hyperhtml-adopt",
+  "version": "0.0.0",
+  "description": "Same hyperHTML, plus the .adopt(node) method",
+>>>>>>> origin/adopt
   "homepage": "https://viperhtml.js.org/hyper.html",
   "unpkg": "min.js",
   "main": "cjs/index.js",
