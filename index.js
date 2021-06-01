@@ -1315,7 +1315,10 @@ var hyperHTML = (function (document) {
       }
     }
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
+=======
+>>>>>>> origin/re-adopt
     return { node: node, childNodes: [] };
   }
 };
@@ -1634,6 +1637,29 @@ var findNode = function findNode(node, path, level) {
       while (node = node.nextSibling) {
         index++;
         if (node.nodeType === Node.COMMENT_NODE && node.textContent === textContent) {
+          break;
+        } else {
+          childNodes.push(node);
+        }
+      }
+    }
+    level[i] = index - path[i];
+  }
+  return { node: node, childNodes: childNodes };
+};
+
+// used to adopt live nodes from virtual paths
+var findNode = function findNode(node, path, level) {
+  var childNodes = [];
+  var length = path.length;
+  for (var i = 0; i < length; i++) {
+    var index = path[i] + (level[i] || 0);
+    node = node.childNodes[index];
+    if (node.nodeType === COMMENT_NODE && /^\u0001:[0-9a-zA-Z]+$/.test(node.textContent)) {
+      var textContent = node.textContent;
+      while (node = node.nextSibling) {
+        index++;
+        if (node.nodeType === COMMENT_NODE && node.textContent === textContent) {
           break;
         } else {
           childNodes.push(node);
@@ -2194,7 +2220,11 @@ function upgrade(template) {
     updates = Updates.create(fragment, info.paths, adopt);
   }
   bewitched.set(this, { template: template, updates: updates });
+<<<<<<< HEAD
   update.apply(updates, arguments);
+=======
+  update$1.apply(updates, arguments);
+>>>>>>> origin/re-adopt
   if (!adopt) {
     this.textContent = '';
     this.appendChild(fragment);
@@ -2215,13 +2245,27 @@ function update() {
 // no matter if these are attributes, text nodes, or regular one
 function createTemplate(template) {
   var paths = [];
+<<<<<<< HEAD
   var fragment = createFragment(this, template.join(UIDC));
+=======
+  var html = template.join(UIDC).replace(selfClosing, SC_PLACE);
+  var fragment = createFragment(this, html);
+>>>>>>> origin/re-adopt
   Updates.find(fragment, paths, template.slice());
   var info = { fragment: fragment, paths: paths };
   templates.set(template, info);
   return info;
 }
 
+<<<<<<< HEAD
+=======
+// some node could be special though, like a custom element
+// with a self closing tag, which should work through these changes.
+var SC_PLACE = function SC_PLACE($0, $1, $2) {
+  return VOID_ELEMENTS.test($1) ? $0 : '<' + $1 + $2 + '></' + $1 + '>';
+};
+
+>>>>>>> origin/re-adopt
 // all wires used per each context
 var wires = new WeakMap();
 
@@ -2489,6 +2533,7 @@ function hyper(HTML) {
 <<<<<<< HEAD
   return hyper;
 =======
+
 
 return hyper;
 >>>>>>> origin/adopt
