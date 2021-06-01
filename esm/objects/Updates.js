@@ -49,6 +49,7 @@ const asNode = (item, i) => {
 // returns true if domdiff can handle the value
 const canDiff = value => 'ELEMENT_NODE' in value;
 
+<<<<<<< HEAD
 // borrowed from uhandlers
 // https://github.com/WebReflection/uhandlers
 const booleanSetter = (node, key, oldValue) => newValue => {
@@ -57,13 +58,114 @@ const booleanSetter = (node, key, oldValue) => newValue => {
       node.setAttribute(key, '');
     else
       node.removeAttribute(key);
+=======
+// updates are created once per context upgrade
+// within the main render function (../hyper/render.js)
+// These are an Array of callbacks to invoke passing
+// each interpolation value.
+// Updates can be related to any kind of content,
+// attributes, or special text-only cases such <style>
+// elements or <textarea>
+const create = (root, paths, adopt) => {
+  const level = adopt ? [] : null;
+  const updates = [];
+  const length = paths.length;
+  for (let i = 0; i < length; i++) {
+    const info = paths[i];
+    const {node, childNodes} = adopt ?
+            findNode(root, info.path, level) :
+            Path.find(root, info.path);
+    switch (info.type) {
+      case 'any':
+        updates.push(setAnyContent(node, childNodes));
+        break;
+      case 'attr':
+        updates.push(
+          setAttribute(
+            node,
+            info.name,
+            adopt ?
+              (
+                node.getAttributeNode(info.name) ||
+                createAttribute(node, info.node.cloneNode(true))
+              ) :
+              info.node,
+            adopt
+          )
+        );
+        break;
+      case 'text':
+        updates.push(
+          setTextContent(
+            adopt ?
+              childNodes[0] :
+              node
+          )
+        );
+        break;
+    }
+>>>>>>> origin/adopt
   }
 };
 
+<<<<<<< HEAD
 const hyperSetter = (node, name, svg) => svg ?
   value => {
     try {
       node[name] = value;
+=======
+// set an attribute node and return it
+const createAttribute = (node, attr) => {
+  node.setAttributeNode(attr);
+  return attr;
+};
+
+// finding all paths is a one-off operation performed
+// when a new template literal is used.
+// The goal is to map all target nodes that will be
+// used to update content/attributes every time
+// the same template literal is used to create content.
+// The result is a list of paths related to the template
+// with all the necessary info to create updates as
+// list of callbacks that target directly affected nodes.
+const find = (node, paths, parts) => {
+  const childNodes = node.childNodes;
+  const length = childNodes.length;
+  for (let i = 0; i < length; i++) {
+    let child = childNodes[i];
+    switch (child.nodeType) {
+      case ELEMENT_NODE:
+        findAttributes(child, paths, parts);
+        find(child, paths, parts);
+        break;
+      case COMMENT_NODE:
+        if (child.textContent === UID) {
+          parts.shift();
+          paths.push(
+            // basicHTML or other non standard engines
+            // might end up having comments in nodes
+            // where they shouldn't, hence this check.
+            SHOULD_USE_TEXT_CONTENT.test(node.nodeName) ?
+              Path.create('text', node) :
+              Path.create('any', child)
+          );
+        }
+        break;
+      case TEXT_NODE:
+        // the following ignore is actually covered by browsers
+        // only basicHTML ends up on previous COMMENT_NODE case
+        // instead of TEXT_NODE because it knows nothing about
+        // special style or textarea behavior
+        /* istanbul ignore if */
+        if (
+          SHOULD_USE_TEXT_CONTENT.test(node.nodeName) &&
+          trim.call(child.textContent) === UIDC
+        ) {
+          parts.shift();
+          paths.push(Path.create('text', node));
+        }
+        break;
+>>>>>>> origin/adopt
     }
     catch (nope) {
       node.setAttribute(name, value);
@@ -72,6 +174,32 @@ const hyperSetter = (node, name, svg) => svg ?
   value => {
     node[name] = value;
   };
+
+// used to adopt live nodes from virtual paths
+const findNode = (node, path, level) => {
+  const childNodes = [];
+  const length = path.length;
+  for (let i = 0; i < length; i++) {
+    let index = path[i] + (level[i] || 0);
+    node = node.childNodes[index];
+    if (
+      node.nodeType === Node.COMMENT_NODE &&
+      /^\u0001:[0-9a-zA-Z]+$/.test(node.textContent)
+    ) {
+      const textContent = node.textContent;
+      while ((node = node.nextSibling)) {
+        index++;
+        if (node.nodeType === Node.COMMENT_NODE && node.textContent === textContent) {
+          break;
+        } else {
+          childNodes.push(node);
+        }
+      }
+    }
+    level[i] = index - path[i];
+  }
+  return {node, childNodes};
+};
 
 // when a Promise is used as interpolation value
 // its result must be parsed once resolved.
@@ -333,6 +461,7 @@ Tagger.prototype = {
           } else {
             anyContent(Intent.invoke(value, anyContent));
           }
+<<<<<<< HEAD
           break;
       }
     };
@@ -362,6 +491,124 @@ Tagger.prototype = {
             textContent([].concat(value.html).join(''));
           } else if ('length' in value) {
             textContent(slice.call(value).join(''));
+=======
+        } else if (canDiff(value)) {
+          childNodes = domdiff(
+            node.parentNode,
+            childNodes,
+            value.nodeType === DOCUMENT_FRAGMENT_NODE ?
+              slice.call(value.childNodes) :
+              [value],
+            asNode,
+            node
+          );
+        } else if (isPromise_ish(value)) {
+          value.then(anyContent);
+        } else if ('placeholder' in value) {
+          invokeAtDistance(value, anyContent);
+        } else if ('text' in value) {
+          anyContent(String(value.text));
+        } else if ('any' in value) {
+          anyContent(value.any);
+        } else if ('html' in value) {
+          childNodes = domdiff(
+            node.parentNode,
+            childNodes,
+            slice.call(
+              createFragment(
+                node,
+                [].concat(value.html).join('')
+              ).childNodes
+            ),
+            asNode,
+            node
+          );
+        } else if ('length' in value) {
+          anyContent(slice.call(value));
+        } else {
+          anyContent(Intent.invoke(value, anyContent));
+        }
+        break;
+    }
+  };
+  return anyContent;
+};
+
+// there are four kind of attributes, and related behavior:
+//  * events, with a name starting with `on`, to add/remove event listeners
+//  * special, with a name present in their inherited prototype, accessed directly
+//  * regular, accessed through get/setAttribute standard DOM methods
+//  * style, the only regular attribute that also accepts an object as value
+//    so that you can style=${{width: 120}}. In this case, the behavior has been
+//    fully inspired by Preact library and its simplicity.
+const setAttribute = (node, name, original, adopt) => {
+  const isSVG = OWNER_SVG_ELEMENT in node;
+  let oldValue;
+  // if the attribute is the style one
+  // handle it differently from others
+  if (name === 'style') {
+    if (adopt) node.removeAttribute(name);
+    return Style(node, original, isSVG);
+  }
+  // the name is an event one,
+  // add/remove event listeners accordingly
+  else if (/^on/.test(name)) {
+    let type = name.slice(2);
+    if (type === CONNECTED || type === DISCONNECTED) {
+      if (notObserving) {
+        notObserving = false;
+        observe();
+      }
+      components.add(node);
+    }
+    else if (name.toLowerCase() in node) {
+      type = type.toLowerCase();
+    }
+    if (adopt) node.removeAttribute(name);
+    return newValue => {
+      if (oldValue !== newValue) {
+        if (oldValue) node.removeEventListener(type, oldValue, false);
+        oldValue = newValue;
+        if (newValue) node.addEventListener(type, newValue, false);
+      }
+    };
+  }
+  // the attribute is special ('value' in input)
+  // and it's not SVG *or* the name is exactly data,
+  // in this case assign the value directly
+  else if (name === 'data' || (!isSVG && name in node)) {
+    return newValue => {
+      if (adopt) {
+        adopt = false;
+        oldValue = node[name];
+      }
+      else if (oldValue !== newValue) {
+        oldValue = newValue;
+        if (node[name] !== newValue) {
+          node[name] = newValue;
+          if (newValue == null) {
+            node.removeAttribute(name);
+          }
+        }
+      }
+    };
+  }
+  // in every other case, use the attribute node as it is
+  // update only the value, set it as node only when/if needed
+  else {
+    let owner = adopt;
+    const attribute = adopt ? original : original.cloneNode(true);
+    return newValue => {
+      if (oldValue !== newValue) {
+        oldValue = newValue;
+        if (attribute.value !== newValue) {
+          if (newValue == null) {
+            if (owner) {
+              owner = false;
+              node.removeAttributeNode(attribute);
+            }
+            attribute.value = newValue;
+>>>>>>> origin/adopt
           } else {
             textContent(Intent.invoke(value, textContent));
           }
