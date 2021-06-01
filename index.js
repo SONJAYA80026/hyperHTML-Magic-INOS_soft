@@ -1314,6 +1314,24 @@ var hyperHTML = (function (document) {
         fragment.removeChild(child);
       }
     }
+<<<<<<< HEAD
+=======
+    return { node: node, childNodes: [] };
+  }
+};
+
+// from https://github.com/developit/preact/blob/33fc697ac11762a1cb6e71e9847670d047af7ce5/src/constants.js
+var IS_NON_DIMENSIONAL = /acit|ex(?:s|g|n|p|$)|rph|ows|mnc|ntw|ine[ch]|zoo|^ord/i;
+
+// style is handled as both string and object
+// even if the target is an SVG element (consistency)
+var Style = (function (node, original, isSVG) {
+  if (isSVG) {
+    var style = original.cloneNode(true);
+    style.value = '';
+    node.setAttributeNode(style);
+    return update$1(style, isSVG);
+>>>>>>> origin/adopt
   }
 
   /*! (c) Andrea Giammarchi - ISC */
@@ -1419,6 +1437,7 @@ var hyperHTML = (function (document) {
         range.setEndAfter(last);
         range.deleteContents();
       }
+<<<<<<< HEAD
 
       return first;
     };
@@ -1431,6 +1450,119 @@ var hyperHTML = (function (document) {
       if (noFragment || forceAppend) {
         for (var n = this.childNodes, i = 0, l = n.length; i < l; i++) {
           fragment.appendChild(n[i]);
+=======
+    }
+  return futureNodes;
+};
+
+// hyper.Component have a connected/disconnected
+// mechanism provided by MutationObserver
+// This weak set is used to recognize components
+// as DOM node that needs to trigger connected/disconnected events
+var components = new WeakSet();
+
+// a basic dictionary used to filter already cached attributes
+// while looking for special hyperHTML values.
+function Cache() {}
+Cache.prototype = Object.create(null);
+
+// returns an intent to explicitly inject content as html
+var asHTML = function asHTML(html) {
+  return { html: html };
+};
+
+// returns nodes from wires and components
+var asNode = function asNode(item, i) {
+  return 'ELEMENT_NODE' in item ? item : item.constructor === Wire ?
+  // in the Wire case, the content can be
+  // removed, post-pended, inserted, or pre-pended and
+  // all these cases are handled by domdiff already
+  /* istanbul ignore next */
+  1 / i < 0 ? i ? item.remove() : item.last : i ? item.insert() : item.first : asNode(item.render(), i);
+};
+
+// returns true if domdiff can handle the value
+var canDiff = function canDiff(value) {
+  return 'ELEMENT_NODE' in value || value instanceof Wire || value instanceof Component;
+};
+
+// updates are created once per context upgrade
+// within the main render function (../hyper/render.js)
+// These are an Array of callbacks to invoke passing
+// each interpolation value.
+// Updates can be related to any kind of content,
+// attributes, or special text-only cases such <style>
+// elements or <textarea>
+var create$1 = function create$$1(root, paths, adopt) {
+  var level = adopt ? [] : null;
+  var updates = [];
+  var length = paths.length;
+  for (var i = 0; i < length; i++) {
+    var info = paths[i];
+
+    var _ref = adopt ? findNode(root, info.path, level) : Path.find(root, info.path),
+        node = _ref.node,
+        childNodes = _ref.childNodes;
+
+    switch (info.type) {
+      case 'any':
+        updates.push(setAnyContent(node, childNodes));
+        break;
+      case 'attr':
+        updates.push(setAttribute(node, info.name, adopt ? node.getAttributeNode(info.name) || createAttribute(node, info.node.cloneNode(true)) : info.node, adopt));
+        break;
+      case 'text':
+        updates.push(setTextContent(adopt ? childNodes[0] : node));
+        break;
+    }
+  }
+  return updates;
+};
+
+// set an attribute node and return it
+var createAttribute = function createAttribute(node, attr) {
+  node.setAttributeNode(attr);
+  return attr;
+};
+
+// finding all paths is a one-off operation performed
+// when a new template literal is used.
+// The goal is to map all target nodes that will be
+// used to update content/attributes every time
+// the same template literal is used to create content.
+// The result is a list of paths related to the template
+// with all the necessary info to create updates as
+// list of callbacks that target directly affected nodes.
+var find = function find(node, paths, parts) {
+  var childNodes = node.childNodes;
+  var length = childNodes.length;
+  for (var i = 0; i < length; i++) {
+    var child = childNodes[i];
+    switch (child.nodeType) {
+      case ELEMENT_NODE:
+        findAttributes$1(child, paths, parts);
+        find(child, paths, parts);
+        break;
+      case COMMENT_NODE:
+        if (child.textContent === UID) {
+          parts.shift();
+          paths.push(
+          // basicHTML or other non standard engines
+          // might end up having comments in nodes
+          // where they shouldn't, hence this check.
+          SHOULD_USE_TEXT_CONTENT.test(node.nodeName) ? Path.create('text', node) : Path.create('any', child));
+        }
+        break;
+      case TEXT_NODE:
+        // the following ignore is actually covered by browsers
+        // only basicHTML ends up on previous COMMENT_NODE case
+        // instead of TEXT_NODE because it knows nothing about
+        // special style or textarea behavior
+        /* istanbul ignore if */
+        if (SHOULD_USE_TEXT_CONTENT.test(node.nodeName) && trim.call(child.textContent) === UIDC) {
+          parts.shift();
+          paths.push(Path.create('text', node));
+>>>>>>> origin/adopt
         }
       }
 
@@ -1446,6 +1578,7 @@ var hyperHTML = (function (document) {
       this.ownerDocument = nodes[0].ownerDocument;
       this._ = null;
     }
+<<<<<<< HEAD
   }([].slice);
 
   // Node.CONSTANTS
@@ -1483,6 +1616,93 @@ var hyperHTML = (function (document) {
       case componentType:
         return asNode(item.render(), i);
 
+=======
+    script.textContent = node.textContent;
+    node.parentNode.replaceChild(script, node);
+  }
+};
+
+// used to adopt live nodes from virtual paths
+var findNode = function findNode(node, path, level) {
+  var childNodes = [];
+  var length = path.length;
+  for (var i = 0; i < length; i++) {
+    var index = path[i] + (level[i] || 0);
+    node = node.childNodes[index];
+    if (node.nodeType === Node.COMMENT_NODE && /^\u0001:[0-9a-zA-Z]+$/.test(node.textContent)) {
+      var textContent = node.textContent;
+      while (node = node.nextSibling) {
+        index++;
+        if (node.nodeType === Node.COMMENT_NODE && node.textContent === textContent) {
+          break;
+        } else {
+          childNodes.push(node);
+        }
+      }
+    }
+    level[i] = index - path[i];
+  }
+  return { node: node, childNodes: childNodes };
+};
+
+// when a Promise is used as interpolation value
+// its result must be parsed once resolved.
+// This callback is in charge of understanding what to do
+// with a returned value once the promise is resolved.
+var invokeAtDistance = function invokeAtDistance(value, callback) {
+  callback(value.placeholder);
+  if ('text' in value) {
+    Promise.resolve(value.text).then(String).then(callback);
+  } else if ('any' in value) {
+    Promise.resolve(value.any).then(callback);
+  } else if ('html' in value) {
+    Promise.resolve(value.html).then(asHTML).then(callback);
+  } else {
+    Promise.resolve(Intent.invoke(value, callback)).then(callback);
+  }
+};
+
+// quick and dirty way to check for Promise/ish values
+var isPromise_ish = function isPromise_ish(value) {
+  return value != null && 'then' in value;
+};
+
+// in a hyper(node)`<div>${content}</div>` case
+// everything could happen:
+//  * it's a JS primitive, stored as text
+//  * it's null or undefined, the node should be cleaned
+//  * it's a component, update the content by rendering it
+//  * it's a promise, update the content once resolved
+//  * it's an explicit intent, perform the desired operation
+//  * it's an Array, resolve all values if Promises and/or
+//    update the node with the resulting list of content
+var setAnyContent = function setAnyContent(node, childNodes) {
+  var fastPath = false;
+  var oldValue = void 0;
+  var anyContent = function anyContent(value) {
+    switch (typeof value) {
+      case 'string':
+      case 'number':
+      case 'boolean':
+        if (fastPath) {
+          if (oldValue !== value) {
+            oldValue = value;
+            childNodes[0].textContent = value;
+          }
+        } else {
+          fastPath = true;
+          oldValue = value;
+          childNodes = domdiff(node.parentNode, childNodes, [text(node, value)], asNode, node);
+        }
+        break;
+      case 'object':
+      case 'undefined':
+        if (value == null) {
+          fastPath = false;
+          childNodes = domdiff(node.parentNode, childNodes, [], asNode, node);
+          break;
+        }
+>>>>>>> origin/adopt
       default:
         return item;
     }
@@ -1502,6 +1722,7 @@ var hyperHTML = (function (document) {
       }
     };
   };
+<<<<<<< HEAD
 
   var hyperSetter = function hyperSetter(node, name, svg) {
     return svg ? function (value) {
@@ -1598,6 +1819,81 @@ var hyperHTML = (function (document) {
                       node[name] = '';
                       node.removeAttribute(name);
                     } else node[name] = newValue;
+=======
+  return anyContent;
+};
+
+// there are four kind of attributes, and related behavior:
+//  * events, with a name starting with `on`, to add/remove event listeners
+//  * special, with a name present in their inherited prototype, accessed directly
+//  * regular, accessed through get/setAttribute standard DOM methods
+//  * style, the only regular attribute that also accepts an object as value
+//    so that you can style=${{width: 120}}. In this case, the behavior has been
+//    fully inspired by Preact library and its simplicity.
+var setAttribute = function setAttribute(node, name, original, adopt) {
+  var isSVG = OWNER_SVG_ELEMENT in node;
+  var oldValue = void 0;
+  // if the attribute is the style one
+  // handle it differently from others
+  if (name === 'style') {
+    if (adopt) node.removeAttribute(name);
+    return Style(node, original, isSVG);
+  }
+  // the name is an event one,
+  // add/remove event listeners accordingly
+  else if (/^on/.test(name)) {
+      var type = name.slice(2);
+      if (type === CONNECTED || type === DISCONNECTED) {
+        if (notObserving) {
+          notObserving = false;
+          observe();
+        }
+        components.add(node);
+      } else if (name.toLowerCase() in node) {
+        type = type.toLowerCase();
+      }
+      if (adopt) node.removeAttribute(name);
+      return function (newValue) {
+        if (oldValue !== newValue) {
+          if (oldValue) node.removeEventListener(type, oldValue, false);
+          oldValue = newValue;
+          if (newValue) node.addEventListener(type, newValue, false);
+        }
+      };
+    }
+    // the attribute is special ('value' in input)
+    // and it's not SVG *or* the name is exactly data,
+    // in this case assign the value directly
+    else if (name === 'data' || !isSVG && name in node) {
+        return function (newValue) {
+          if (adopt) {
+            adopt = false;
+            oldValue = node[name];
+          } else if (oldValue !== newValue) {
+            oldValue = newValue;
+            if (node[name] !== newValue) {
+              node[name] = newValue;
+              if (newValue == null) {
+                node.removeAttribute(name);
+              }
+            }
+          }
+        };
+      }
+      // in every other case, use the attribute node as it is
+      // update only the value, set it as node only when/if needed
+      else {
+          var owner = adopt;
+          var attribute = adopt ? original : original.cloneNode(true);
+          return function (newValue) {
+            if (oldValue !== newValue) {
+              oldValue = newValue;
+              if (attribute.value !== newValue) {
+                if (newValue == null) {
+                  if (owner) {
+                    owner = false;
+                    node.removeAttributeNode(attribute);
+>>>>>>> origin/adopt
                   }
                 };
               } else if (name in Intent.attributes) {
@@ -1833,7 +2129,145 @@ var hyperHTML = (function (document) {
       isNoOp = true;
     }
 
+<<<<<<< HEAD
     return TL(tl);
+=======
+  // The MutationObserver is the best way to implement that
+  // but there is a fallback to deprecated DOMNodeInserted/Removed
+  // so that even older browsers/engines can help components life-cycle
+  try {
+    new MutationObserver(function (records) {
+      var length = records.length;
+      for (var i = 0; i < length; i++) {
+        var record = records[i];
+        dispatchAll(record.removedNodes, DISCONNECTED);
+        dispatchAll(record.addedNodes, CONNECTED);
+      }
+    }).observe(document, { subtree: true, childList: true });
+  } catch (o_O) {
+    document.addEventListener('DOMNodeRemoved', function (event) {
+      dispatchAll([event.target], DISCONNECTED);
+    }, false);
+    document.addEventListener('DOMNodeInserted', function (event) {
+      dispatchAll([event.target], CONNECTED);
+    }, false);
+  }
+}
+
+// a weak collection of contexts that
+// are already known to hyperHTML
+var bewitched = new WeakMap();
+
+// the collection of all template literals
+// since these are unique and immutable
+// for the whole application life-cycle
+var templates = new Map();
+
+// better known as hyper.bind(node), the render is
+// the main tag function in charge of fully upgrading
+// or simply updating, contexts used as hyperHTML targets.
+// The `this` context is either a regular DOM node or a fragment.
+function render(template) {
+  var wicked = bewitched.get(this);
+  if (wicked && wicked.template === unique(template)) {
+    update.apply(wicked.updates, arguments);
+  } else {
+    upgrade.apply(this, arguments);
+  }
+  return this;
+}
+
+// an upgrade is in charge of collecting template info,
+// parse it once, if unknown, to map all interpolations
+// as single DOM callbacks, relate such template
+// to the current context, and render it after cleaning the context up
+function upgrade(template) {
+  template = unique(template);
+  var adopt = render.adopt;
+  var info = templates.get(template) || createTemplate.call(this, template);
+  var fragment = void 0,
+      updates = void 0;
+  if (adopt) {
+    updates = Updates.create(this, info.paths, adopt);
+  } else {
+    fragment = importNode(this.ownerDocument, info.fragment);
+    updates = Updates.create(fragment, info.paths, adopt);
+  }
+  bewitched.set(this, { template: template, updates: updates });
+  update.apply(updates, arguments);
+  if (!adopt) {
+    this.textContent = '';
+    this.appendChild(fragment);
+  }
+}
+
+// an update simply loops over all mapped DOM operations
+function update() {
+  var length = arguments.length;
+  for (var i = 1; i < length; i++) {
+    this[i - 1](arguments[i]);
+  }
+}
+
+// a template can be used to create a document fragment
+// aware of all interpolations and with a list
+// of paths used to find once those nodes that need updates,
+// no matter if these are attributes, text nodes, or regular one
+function createTemplate(template) {
+  var paths = [];
+  var fragment = createFragment(this, template.join(UIDC));
+  Updates.find(fragment, paths, template.slice());
+  var info = { fragment: fragment, paths: paths };
+  templates.set(template, info);
+  return info;
+}
+
+// all wires used per each context
+var wires = new WeakMap();
+
+// A wire is a callback used as tag function
+// to lazily relate a generic object to a template literal.
+// hyper.wire(user)`<div id=user>${user.name}</div>`; => the div#user
+// This provides the ability to have a unique DOM structure
+// related to a unique JS object through a reusable template literal.
+// A wire can specify a type, as svg or html, and also an id
+// via html:id or :id convention. Such :id allows same JS objects
+// to be associated to different DOM structures accordingly with
+// the used template literal without losing previously rendered parts.
+var wire = function wire(obj, type) {
+  return obj == null ? content(type || 'html') : weakly(obj, type || 'html');
+};
+
+// A wire content is a virtual reference to one or more nodes.
+// It's represented by either a DOM node, or an Array.
+// In both cases, the wire content role is to simply update
+// all nodes through the list of related callbacks.
+// In few words, a wire content is like an invisible parent node
+// in charge of updating its content like a bound element would do.
+var content = function content(type) {
+  var wire = void 0,
+      container = void 0,
+      content = void 0,
+      template = void 0,
+      updates = void 0;
+  return function (statics) {
+    statics = unique(statics);
+    var setup = template !== statics;
+    if (setup) {
+      template = statics;
+      content = fragment(document);
+      container = type === 'svg' ? document.createElementNS(SVG_NAMESPACE, 'svg') : content;
+      updates = render.bind(container);
+    }
+    updates.apply(null, arguments);
+    if (setup) {
+      if (type === 'svg') {
+        append(content, slice.call(container.childNodes));
+      }
+      wire = wireContent(content);
+    }
+    return wire;
+>>>>>>> origin/adopt
   };
 
   function TL(tl) {
@@ -1901,6 +2335,7 @@ var hyperHTML = (function (document) {
   // and this is thanks to the type + :id feature.
 
 
+<<<<<<< HEAD
   var weakly = function weakly(obj, type) {
     var i = type.indexOf(':');
     var wire = wires.get(obj);
@@ -1910,6 +2345,33 @@ var hyperHTML = (function (document) {
       id = type.slice(i + 1);
       type = type.slice(0, i) || 'html';
     }
+=======
+// all functions are self bound to the right context
+// you can do the following
+// const {bind, wire} = hyperHTML;
+// and use them right away: bind(node)`hello!`;
+var adopt = function adopt(context) {
+  return function () {
+    render.adopt = true;
+    return render.apply(context, arguments);
+  };
+};
+var bind = function bind(context) {
+  return function () {
+    render.adopt = false;
+    return render.apply(context, arguments);
+  };
+};
+var define = Intent.define;
+
+hyper.Component = Component;
+hyper.adopt = adopt;
+hyper.bind = bind;
+hyper.define = define;
+hyper.diff = domdiff;
+hyper.hyper = hyper;
+hyper.wire = wire;
+>>>>>>> origin/adopt
 
     if (!wire) wires.set(obj, wire = {});
     return wire[id] || (wire[id] = content(type));
@@ -1933,7 +2395,16 @@ var hyperHTML = (function (document) {
     return length === 1 ? childNodes[0] : length ? new Wire(childNodes) : node;
   };
 
+<<<<<<< HEAD
   // are already known to hyperHTML
+=======
+// by default, hyperHTML is a smart function
+// that "magically" understands what's the best
+// thing to do with passed arguments
+function hyper(HTML) {
+  return arguments.length < 2 ? HTML == null ? content('html') : typeof HTML === 'string' ? wire(null, HTML) : 'raw' in HTML ? content('html')(HTML) : 'nodeType' in HTML ? bind(HTML) : weakly(HTML, 'html') : ('raw' in HTML ? content('html') : wire).apply(null, arguments);
+}
+>>>>>>> origin/adopt
 
   var bewitched = new WeakMap$1(); // better known as hyper.bind(node), the render is
   // the main tag function in charge of fully upgrading
@@ -2015,6 +2486,11 @@ var hyperHTML = (function (document) {
   
   
 
+<<<<<<< HEAD
   return hyper;
+=======
+
+return hyper;
+>>>>>>> origin/adopt
 
 }(document));
