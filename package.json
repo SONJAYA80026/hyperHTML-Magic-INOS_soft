@@ -122,7 +122,11 @@
   "devDependencies": {
     "@babel/core": "^7.9.0",
     "@babel/preset-env": "^7.9.0",
+<<<<<<< HEAD
     "ascjs": "^4.0.1",
+=======
+    "ascjs": "^4.0.0",
+>>>>>>> upstream/greenkeeper/ascjs-4.0.0
     "basichtml": "^2.2.0",
     "coveralls": "^3.0.11",
     "drop-babel-typeof": "^1.0.3",
